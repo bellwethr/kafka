@@ -11,11 +11,6 @@ KAFKA_USER="<%=@kafka_user%>"
 KAFKA_GROUP="<%=@kafka_group%>"
 KAFKA_PID=/var/run/$NAME.pid
 
-# Add the JMX port.
-if [ -z "$JMX_PORT" ]; then
-    JMX_PORT="<%=@java_jmx_port%>"
-fi
-
 
 # Check what the caller wants.
 case "$1" in
