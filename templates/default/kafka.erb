@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Setup basic path information.
+NAME=kafka
+LOG_OUT="<%=File.join(@log_dir,"process.out")%>"
+LOG_ERR="<%=File.join(@log_dir,"process.err")%>"
+HOME_DIR="<%=@install_dir%>"
+KAFKA_VERSION="<%=@kafka_version%>"
+SERVER_CONFIG="<%=@install_dir%>/config/server.properties"
+KAFKA_USER="<%=@kafka_user%>"
+KAFKA_GROUP="<%=@kafka_group%>"
+KAFKA_PID=/var/run/$NAME.pid
+
+# Add the JMX port.
+if [ -z "$JMX_PORT" ]; then
+    JMX_PORT="<%=@java_jmx_port%>"
+fi
+
+
+# Check what the caller wants.
+case "$1" in
+    start)
+            echo -n "Starting $NAME"
+            touch $KAFKA_PID
+            CMD="$HOME_DIR/$KAFKA_VERSION/bin/kafka-server-start.sh $HOME_DIR/$KAFKA_VERSION/config/server.properties"
+            start-stop-daemon --start --background --pidfile $KAFKA_PID --make-pidfile --user $KAFKA_USER --group $KAFKA_GROUP --startas $CMD -- >$LOG_OUT 2>$LOG_ERR 
+            echo
+	;;
+    stop)
+	    CMD=$HOME_DIR/$KAFKA_VERSION/bin/kafka-server-stop.sh
+	    exec $CMD >$LOG_OUT 2>$LOG_ERR
+	;;
+    status)
+	    if start-stop-daemon --test --start --pidfile $KAFKA_PID --startas /bin/bash > /dev/null; then
+	        echo "Process not running"
+		exit 1 	
+	    else
+		echo "Process running"
+		exit 0
+	    fi
+	;;
+    *)
+        echo "usage: daemon {start|stop}" >&2
+        exit 1
+        ;;
+esac

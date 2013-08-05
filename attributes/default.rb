@@ -17,13 +17,13 @@
 # limitations under the License.
 
 # Install
-default[:kafka][:version] = "0.7.1"
-default[:kafka][:download_url] = nil
-default[:kafka][:checksum] = "ee845b947b00d6d83f51a93e6ff748bb03e5945e4f3f12a77534f55ab90cb2a8"
+default[:kafka][:kafka_version] = "kafka_2.8.0-0.8.0-beta1"
+default[:kafka][:download_url] = "https://dist.apache.org/repos/dist/release/kafka" 
+default[:kafka][:checksum] = "750046ab729d"
 
-default[:kafka][:install_dir] = "/opt/kafka"
-default[:kafka][:data_dir] = "/var/kafka"
-default[:kafka][:log_dir] = "/var/log/kafka"
+default[:kafka][:install_dir] = "/mnt/kafka"
+default[:kafka][:data_dir] = "/mnt/kafka/data"
+default[:kafka][:log_dir] = "/mnt/kafka/log"
 default[:kafka][:chroot_suffix] = "brokers"
 
 default[:kafka][:num_partitions] = 1
@@ -41,4 +41,3 @@ default[:kafka][:user] = "kafka"
 default[:kafka][:group] = "kafka"
 
 default[:kafka][:log4j_logging_level] = "INFO"
-default[:kafka][:jmx_port] = 9999

@@ -19,7 +19,6 @@
 
 # == Recipes
 include_recipe "java"
-include_recipe "runit"
 
 java_home   = node['java']['java_home']
 
@@ -54,24 +53,9 @@ end
 
 # create the install directory
 install_dir = node[:kafka][:install_dir]
+kafka_version = node[:kafka][:kafka_version]
 
 directory "#{install_dir}" do
-  owner "root"
-  group "root"
-  mode 00755
-  recursive true
-  action :create
-end
-
-directory "#{install_dir}/bin" do
-  owner "root"
-  group "root"
-  mode 00755
-  recursive true
-  action :create
-end
-
-directory "#{install_dir}/config" do
   owner "root"
   group "root"
   mode 00755
@@ -98,7 +82,7 @@ directory node[:kafka][:data_dir] do
 end
 
 # pull the remote file only if we create the directory
-tarball = "kafka-#{node[:kafka][:version]}.tar.gz"
+tarball = "#{kafka_version}.tgz"
 download_file = "#{node[:kafka][:download_url]}/#{tarball}"
 
 remote_file "#{Chef::Config[:file_cache_path]}/#{tarball}" do
@@ -116,21 +100,6 @@ execute "tar" do
   command "tar zxvf #{Chef::Config[:file_cache_path]}/#{tarball}"
 end
 
-template "#{install_dir}/bin/service-control" do
-  source  "service-control.erb"
-  owner "root"
-  group "root"
-  mode  00755
-  variables({
-    :install_dir => install_dir,
-    :log_dir => node[:kafka][:log_dir],
-    :java_home => java_home,
-    :java_jmx_port => node[:kafka][:jmx_port],
-    :java_class => "kafka.Kafka",
-    :user => user
-  })
-end
-
 # grab the zookeeper nodes that are currently available
 zookeeper_pairs = Array.new
 if not Chef::Config.solo
@@ -139,9 +108,9 @@ if not Chef::Config.solo
   end
 end
 
-
-%w[server.properties log4j.properties].each do |template_file|
-  template "#{install_dir}/config/#{template_file}" do
+# set up the configuration files
+%w[server.properties log4j.properties consumer.properties zookeeper.properties producer.properties].each do |template_file|
+  template "#{install_dir}/#{kafka_version}/config/#{template_file}" do
     source	"#{template_file}.erb"
     owner user
     group group
@@ -165,32 +134,31 @@ execute "chown" do
 end
 
 execute "chmod" do
-	command "chmod -R 755 #{install_dir}/bin"
+	command "chmod -R 755 #{install_dir}/#{kafka_version}/bin"
 	action :run
 end
 
-# create the runit service
-runit_service "kafka" do
-  options({
-    :log_dir => node[:kafka][:log_dir],
+
+# set up init script and launch the service
+init_template = template "kafka" do
+  path "/etc/init.d/kafka"
+  source "kafka.erb"
+  owner "root"
+  group "root"
+  mode "0755"
+  variables({
     :install_dir => install_dir,
-    :java_home => java_home,
-    :user => user
+    :kafka_version => kafka_version,
+    :log_dir => node[:kafka][:log_dir],
+    :kafka_user => user,
+    :kafka_group => group
   })
 end
-
-# create collectd plugin for kafka JMX objects if collectd has been applied.
-if node.attribute?("collectd")
-  template "#{node[:collectd][:plugin_conf_dir]}/collectd_kafka-broker.conf" do
-    source "collectd_kafka-broker.conf.erb"
-    owner "root"
-    group "root"
-    mode 00644
-    notifies :restart, resources(:service => "collectd")
-  end
-end
+#force the init script to be created before the service is started
+init_template.run_action(:create)
 
 # start up Kafka broker
 service "kafka" do
+  supports :restart => true, :start => true, :stop => true, :reload => true, :status => true
   action :start
-end
+end 

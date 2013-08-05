@@ -1,12 +1,11 @@
 Description
 ===========
 
-Installs kafka 0.7.1
+Installs kafka 0.8.0-beta1
 
 Requirements
 ============
 * Java cookbook version >= 1.5
-* Runit cookbook
 
 Attributes
 ==========
@@ -28,6 +27,8 @@ Usage
 =====
 
 * kafka - Install a Kafka broker.
+
+Based on Webtrend's Kafka 0.7.1 chef cookbook
 
 = LICENSE and AUTHOR:
 
